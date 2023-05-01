@@ -1,129 +1,142 @@
+
 #!/usr/bin/python3
 """
-Module for unittests for the FileStorage class
+Contains the TestFileStorageDocs classes
 """
-import unittest
-import os
-import datetime
-import json
-from models.engine.file_storage import FileStorage
-from models.base_model import BaseModel
+
+from datetime import datetime
+import inspect
 import models
+from models.engine import file_storage
+from models.amenity import Amenity
+from models.base_model import BaseModel
+from models.city import City
+from models.place import Place
+from models.review import Review
+from models.state import State
+from models.user import User
+import json
+import os
+import pep8
+import unittest
+FileStorage = file_storage.FileStorage
+classes = {"Amenity": Amenity, "BaseModel": BaseModel, "City": City,
+           "Place": Place, "Review": Review, "State": State, "User": User}
 
 
-class TestFileStorageClassCreation(unittest.TestCase):
-    """Test class for Storage class instantiation tests"""
+class TestFileStorageDocs(unittest.TestCase):
+    """Tests to check the documentation and style of FileStorage class"""
+    @classmethod
+    def setUpClass(cls):
+        """Set up for the doc tests"""
+        cls.fs_f = inspect.getmembers(FileStorage, inspect.isfunction)
 
-    def setUp(self):
-        self.file = 'file.json'
-        try:
-            os.remove(self.file)
-        except:
-            pass
-        self.x = BaseModel()
-        self.fs = FileStorage()
-        self.storage = models.storage
+    def test_pep8_conformance_file_storage(self):
+        """Test that models/engine/file_storage.py conforms to PEP8."""
+        pep8s = pep8.StyleGuide(quiet=True)
+        result = pep8s.check_files(['models/engine/file_storage.py'])
+        self.assertEqual(result.total_errors, 0,
+                         "Found code style errors (and warnings).")
 
-    def tearDown(self):
-        try:
-            os.remove(self.file)
-        except:
-            pass
+    def test_pep8_conformance_test_file_storage(self):
+        """Test tests/test_models/test_file_storage.py conforms to PEP8."""
+        pep8s = pep8.StyleGuide(quiet=True)
+        result = pep8s.check_files(['tests/test_models/test_engine/\
+test_file_storage.py'])
+        self.assertEqual(result.total_errors, 0,
+                         "Found code style errors (and warnings).")
 
-    def test_inheritance(self):
-        self.assertIsInstance(self.fs, FileStorage)
+    def test_file_storage_module_docstring(self):
+        """Test for the file_storage.py module docstring"""
+        self.assertIsNot(file_storage.__doc__, None,
+                         "file_storage.py needs a docstring")
+        self.assertTrue(len(file_storage.__doc__) >= 1,
+                        "file_storage.py needs a docstring")
 
-    def test_fs_has_class_attributes(self):
-        self.assertIsInstance(self.fs._FileStorage__file_path, str)
-        self.assertIsInstance(self.fs._FileStorage__objects, dict)
+    def test_file_storage_class_docstring(self):
+        """Test for the FileStorage class docstring"""
+        self.assertIsNot(FileStorage.__doc__, None,
+                         "FileStorage class needs a docstring")
+        self.assertTrue(len(FileStorage.__doc__) >= 1,
+                        "FileStorage class needs a docstring")
 
-    def test_inheritance_storage(self):
-        self.assertIsInstance(self.storage, FileStorage)
+    def test_fs_func_docstrings(self):
+        """Test for the presence of docstrings in FileStorage methods"""
+        for func in self.fs_f:
+            self.assertIsNot(func[1].__doc__, None,
+                             "{:s} method needs a docstring".format(func[0]))
+            self.assertTrue(len(func[1].__doc__) >= 1,
+                            "{:s} method needs a docstring".format(func[0]))
 
-    def test_fs_has_class_attributes_storage(self):
-        self.assertIsInstance(self.storage._FileStorage__file_path, str)
-        self.assertIsInstance(self.storage._FileStorage__objects, dict)
 
-    def test_fs_attributes_private(self):
-        fs = FileStorage()
-        with self.assertRaises(Exception):
-            fs.__objects
-        with self.assertRaises(Exception):
-            fs.__file_path
-        with self.assertRaises(Exception):
-            getattr(fs, '__objects')
-        with self.assertRaises(Exception):
-            getattr(fs, '__file_path')
+class TestFileStorage(unittest.TestCase):
+    """Test the FileStorage class"""
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_all_returns_dict(self):
+        """Test that all returns the FileStorage.__objects attr"""
+        storage = FileStorage()
+        new_dict = storage.all()
+        self.assertEqual(type(new_dict), dict)
+        self.assertIs(new_dict, storage._FileStorage__objects)
 
-    def test_creation_with_arg(self):
-        with self.assertRaises(Exception):
-            fs = FileStorage(3)
-        with self.assertRaises(Exception):
-            fs = FileStorage("hello")
-        with self.assertRaises(Exception):
-            fs = FileStorage([])
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_new(self):
+        """test that new adds an object to the FileStorage.__objects attr"""
+        storage = FileStorage()
+        save = FileStorage._FileStorage__objects
+        FileStorage._FileStorage__objects = {}
+        test_dict = {}
+        for key, value in classes.items():
+            with self.subTest(key=key, value=value):
+                instance = value()
+                instance_key = instance.__class__.__name__ + "." + instance.id
+                storage.new(instance)
+                test_dict[instance_key] = instance
+                self.assertEqual(test_dict, storage._FileStorage__objects)
+        FileStorage._FileStorage__objects = save
 
-    def test_all_method(self):
-        self.assertIsInstance(self.storage.all(), dict)
-        count = len(self.storage.all())
-        self.assertTrue(count != 0)
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_save(self):
+        """Test that save properly saves objects to file.json"""
+        storage = FileStorage()
+        new_dict = {}
+        for key, value in classes.items():
+            instance = value()
+            instance_key = instance.__class__.__name__ + "." + instance.id
+            new_dict[instance_key] = instance
+        save = FileStorage._FileStorage__objects
+        FileStorage._FileStorage__objects = new_dict
+        storage.save()
+        FileStorage._FileStorage__objects = save
+        for key, value in new_dict.items():
+            new_dict[key] = value.to_dict()
+        string = json.dumps(new_dict)
+        with open("file.json", "r") as f:
+            js = f.read()
+        self.assertEqual(json.loads(string), json.loads(js))
 
-    def test_new_method(self):
-        x = BaseModel()
-        obj_key = "{}.{}".format(x.__class__.__name__, x.id)
-        self.storage.new(x)
-        self.assertTrue(obj_key in self.storage._FileStorage__objects)
-        self.assertIsInstance(self.storage._FileStorage__objects[obj_key],
-                              BaseModel)
-        temp_bm = self.storage._FileStorage__objects[obj_key]
-        self.assertEqual(temp_bm.__class__.__name__,
-                         'BaseModel')
-        self.assertEqual(temp_bm.id, x.id)
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_get(self):
+        """ Tests to check method for obtaining an instance file storage"""
+        storage = FileStorage()
+        dic = {"name": "Vecindad"}
+        instance = State(**dic)
+        storage.new(instance)
+        storage.save()
+        storage = FileStorage()
+        get_instance = storage.get(State, instance.id)
+        self.assertEqual(get_instance, instance)
 
-    def test_new_method_1(self):
-        count = len(self.storage.all())
-        y = BaseModel()
-        new_count = len(self.storage.all())
-        self.assertEqual(count + 1, new_count)
-        self.assertEqual(y.__class__.__name__, 'BaseModel')
-        self.assertTrue(hasattr(y, 'created_at'))
-        self.assertTrue(hasattr(y, 'updated_at'))
-
-    def test_save_method(self):
-        # self.assertIsInstance(self.storage._FileStorage__objects, dict)
-        self.x = BaseModel()
-        self.storage.save()
-        self.assertTrue(os.path.exists(self.file))
-        self.assertTrue(os.stat(self.file).st_size != 0)
-
-    def test_reload_method(self):
-        self.x = BaseModel()
-        self.x.custom = "Warriors"
-        x_id_key = "{}.{}".format(self.x.__class__.__name__, self.x.id)
-        self.storage.new(self.x)
-        self.storage.save()
-        self.storage._FileStorage__objects = {}
-        self.storage.reload()
-        temp_obj = self.storage._FileStorage__objects[x_id_key]
-        self.assertEqual(self.x.id,
-                         temp_obj.id)
-        self.assertEqual(self.x.created_at,
-                         temp_obj.created_at)
-        self.assertEqual(self.x.updated_at,
-                         temp_obj.updated_at)
-        self.assertEqual(self.x.custom,
-                         temp_obj.custom)
-        self.assertIsInstance(self.x.id,
-                              str)
-        self.assertIsInstance(self.x.created_at,
-                              datetime.datetime)
-        self.assertIsInstance(self.x.updated_at,
-                              datetime.datetime)
-        self.assertIsInstance(self.x.custom,
-                              str)
-
-    def test_str_method(self):
-        string = "[{}] ({}) {}".format(self.x.__class__.__name__,
-                                       self.x.id,
-                                       self.x.__dict__)
-        self.assertEqual(string, str(self.x))
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_count(self):
+        """ Tests to check the count method file storage """
+        storage = FileStorage()
+        dic = {"name": "Vecindad"}
+        state = State(**dic)
+        storage.new(state)
+        dic = {"name": "Mexico"}
+        city = City(**dic)
+        storage.new(city)
+        storage.save()
+        c = storage.count()
+        self.assertEqual(len(storage.all()), c)
