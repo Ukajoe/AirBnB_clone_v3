@@ -156,12 +156,10 @@ No known bugs at this time.
 ## Authors
 Alexa Orrico - [Github](https://github.com/alexaorrico) / [Twitter](https://twitter.com/alexa_orrico)  
 
-Jennifer Huang - [Github](https://github.com/jhuang10123) / [Twitter](https://twitter.com/earthtojhuang)
 
-Josef Goodyear - [Github](https://github.com/josefgoodyear) / [Twitter](https://twitter.com/josefgoodyear)
+ Goodyear - [Github](https://github.com/josefgoodyear) / [Twitter](https://twitter.com/josefgoodyear)
 
-Drew Maring - [Github](https://github.com/dmaring) / [Twitter](https://twitter.com/drewmaring)
 
-Second part of Airbnb: Joann Vuong
+Second part of Airbnb: Uka Joseph
 ## License
 Public Domain. No copy write protection. 
