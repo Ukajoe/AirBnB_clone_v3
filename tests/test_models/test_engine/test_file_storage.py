@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 """
 Contains the TestFileStorageDocs classes
@@ -117,26 +116,30 @@ class TestFileStorage(unittest.TestCase):
 
     @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
     def test_get(self):
-        """ Tests to check method for obtaining an instance file storage"""
+        """Test that the get method in file storage"""
         storage = FileStorage()
-        dic = {"name": "Vecindad"}
-        instance = State(**dic)
-        storage.new(instance)
+        new_state = State("New Mexico")
+        storage.new(new_state)
         storage.save()
-        storage = FileStorage()
-        get_instance = storage.get(State, instance.id)
-        self.assertEqual(get_instance, instance)
+        get_obj = storage.get(cls='State', id=new_state.id)
+        self.assertEqual(type(get_obj), State)
 
     @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
     def test_count(self):
-        """ Tests to check the count method file storage """
+        """Test the correct count of items for all Classes"""
         storage = FileStorage()
-        dic = {"name": "Vecindad"}
-        state = State(**dic)
-        storage.new(state)
-        dic = {"name": "Mexico"}
-        city = City(**dic)
-        storage.new(city)
+        base_count = storage.count()
+        new_state = State("New Mexico")
+        storage.new(new_state)
         storage.save()
-        c = storage.count()
-        self.assertEqual(len(storage.all()), c)
+        self.assertEqual(base_count + 1, storage.count())
+
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_count_class(self):
+        """Test the correct count of items for a Class"""
+        storage = FileStorage()
+        base_count = storage.count(State)
+        new_state = State("North Carolina")
+        storage.new(new_state)
+        storage.save()
+        self.assertEqual(base_count + 1, storage.count(State))

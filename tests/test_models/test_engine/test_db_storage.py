@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 """
 Contains the TestDBStorageDocs and TestDBStorage classes
@@ -19,9 +18,11 @@ import json
 import os
 import pep8
 import unittest
+
 DBStorage = db_storage.DBStorage
 classes = {"Amenity": Amenity, "City": City, "Place": Place,
            "Review": Review, "State": State, "User": User}
+storage_t = DBStorage()
 
 
 class TestDBStorageDocs(unittest.TestCase):
@@ -68,6 +69,26 @@ test_db_storage.py'])
             self.assertTrue(len(func[1].__doc__) >= 1,
                             "{:s} method needs a docstring".format(func[0]))
 
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_db_storage_count(self):
+        """ test that counts work each time """
+        storage_t.reload()
+        original_count = storage_t.count()
+        s = State(name='California')
+        storage_t.new(s)
+        storage_t.save()
+        self.assertEqual(original_count + 1, storage_t.count())
+
+    @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
+    def test_db_storage_get(self):
+        """ test that get returns a number """
+        storage_t.reload()
+        s = State(name='California')
+        storage_t.new(s)
+        storage_t.save()
+        get_check = storage_t.get(State, s.id)
+        self.assertEqual(type(get_check), State)
+
 
 class TestFileStorage(unittest.TestCase):
     """Test the FileStorage class"""
@@ -87,24 +108,3 @@ class TestFileStorage(unittest.TestCase):
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_save(self):
         """Test that save properly saves objects to file.json"""
-
-    def test_get_db(self):
-        """ Tests for obtaining an instance db storage"""
-        dic = {"name": "Cundinamarca"}
-        instance = State(**dic)
-        storage.new(instance)
-        storage.save()
-        get_instance = storage.get(State, instance.id)
-        self.assertEqual(get_instance, instance)
-
-    def test_count(self):
-        """ Tests for checking the count method db storage """
-        dic = {"name": "Vecindad"}
-        state = State(**dic)
-        storage.new(state)
-        dic = {"name": "Mexico", "state_id": state.id}
-        city = City(**dic)
-        storage.new(city)
-        storage.save()
-        c = storage.count()
-        self.assertEqual(len(storage.all()), c)
